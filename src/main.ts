@@ -2,10 +2,14 @@ import './instrument'; // Sentry — must be first import
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
+import cookieParser = require('cookie-parser');
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Parse cookies — required for httpOnly refresh token
+  app.use(cookieParser());
 
   // Security — sets recommended HTTP headers
   app.use(helmet());

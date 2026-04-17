@@ -33,11 +33,31 @@ model User {
   orders             Order[]
   otpSessions        OtpSession[]
   wishlistItems      WishlistItem[]
+  refreshTokens      RefreshToken[]
 
   @@index([phone])
   @@index([email])
   @@index([role])
   @@map("users")
+}
+
+// ─── Refresh tokens for session management ─────────────
+// Each login creates a new "family". Rotation replaces the token
+// within a family. If an old (revoked) token in a family is replayed,
+// the entire family is wiped — detects token theft.
+model RefreshToken {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tokenHash  String   @unique @map("token_hash") @db.VarChar(64) // SHA-256 hex of raw token
+  userId     String   @map("user_id") @db.Uuid
+  family     String   @db.VarChar(36)          // UUID — shared by all rotations of one login
+  isRevoked  Boolean  @default(false) @map("is_revoked")
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([family])
+  @@map("refresh_tokens")
 }
 
 model OtpSession {

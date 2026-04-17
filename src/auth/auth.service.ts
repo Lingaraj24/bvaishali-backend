@@ -8,8 +8,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
+import { createHash, randomBytes } from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 import { RegisterDto } from './dto/register.dto';
 import { EmailService } from '../email/email.service';
+
+const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 @Injectable()
 export class AuthService {
@@ -22,8 +26,106 @@ export class AuthService {
 
   // ─── Helpers ────────────────────────────────────────
 
+  // ─── Token helpers ──────────────────────────────────
+
+  /** Access token: 1 hour. Used by web AND Postman/Bruno. */
   private signToken(user: { id: string; role: string }) {
-    return this.jwtService.sign({ sub: user.id, role: user.role });
+    return this.jwtService.sign({ sub: user.id, role: user.role }, { expiresIn: '1h' });
+  }
+
+  /** Raw refresh token: 32 random bytes (hex string). */
+  private generateRawRefreshToken(): string {
+    return randomBytes(32).toString('hex');
+  }
+
+  /** SHA-256 hash stored in DB — raw token never persisted. */
+  private hashToken(raw: string): string {
+    return createHash('sha256').update(raw).digest('hex');
+  }
+
+  /**
+   * Issue a new refresh token in a given family (or a new family).
+   * Returns the raw token to be sent to the client as httpOnly cookie.
+   */
+  async issueRefreshToken(userId: string, family?: string): Promise<string> {
+    const raw = this.generateRawRefreshToken();
+    const tokenHash = this.hashToken(raw);
+    const tokenFamily = family ?? uuidv4();
+
+    await this.prisma.refreshToken.create({
+      data: {
+        tokenHash,
+        userId,
+        family: tokenFamily,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      },
+    });
+
+    return raw;
+  }
+
+  /**
+   * Validate refresh token, rotate it, detect replay attacks.
+   * Returns new access token + raw refresh token.
+   * Throws UnauthorizedException on any anomaly.
+   */
+  async rotateRefreshToken(rawToken: string): Promise<{ access_token: string; refreshToken: string; user: object }> {
+    const tokenHash = this.hashToken(rawToken);
+
+    const stored = await this.prisma.refreshToken.findUnique({ where: { tokenHash } });
+
+    if (!stored) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    // Expired
+    if (stored.expiresAt < new Date()) {
+      await this.prisma.refreshToken.delete({ where: { id: stored.id } });
+      throw new UnauthorizedException('Refresh token expired — please log in again');
+    }
+
+    // Replay attack: token already revoked — nuke entire family
+    if (stored.isRevoked) {
+      await this.prisma.refreshToken.deleteMany({ where: { family: stored.family } });
+      throw new UnauthorizedException('Token reuse detected — all sessions revoked. Please log in again');
+    }
+
+    // Revoke the used token
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { isRevoked: true },
+    });
+
+    // Issue a new token in the same family (rotation)
+    const newRaw = await this.issueRefreshToken(stored.userId, stored.family);
+
+    const user = await this.usersService.findOne(stored.userId);
+    if (!user) throw new UnauthorizedException('User not found');
+
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+
+    return {
+      access_token: this.signToken(user),
+      refreshToken: newRaw,
+      user: {
+        id: user.id, email: user.email, firstName: user.firstName,
+        lastName: user.lastName, phone: user.phone, role: user.role, avatarUrl: user.avatarUrl,
+      },
+    };
+  }
+
+  /** Revoke a specific refresh token on logout. */
+  async revokeRefreshToken(rawToken: string): Promise<void> {
+    const tokenHash = this.hashToken(rawToken);
+    await this.prisma.refreshToken.updateMany({
+      where: { tokenHash },
+      data: { isRevoked: true },
+    });
+  }
+
+  /** Revoke ALL refresh tokens for a user (logout everywhere). */
+  async revokeAllRefreshTokens(userId: string): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({ where: { userId } });
   }
 
   private generateOtp(): string {
