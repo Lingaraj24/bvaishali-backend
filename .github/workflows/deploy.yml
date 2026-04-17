@@ -1,0 +1,121 @@
+name: Release & Deploy
+
+# Triggers when you push a version tag: v10.0.1, v10.0.2, etc.
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ── 1. Lint + build check ──────────────────────────────
+  ci:
+    name: Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+
+  # ── 2. Build Docker image tagged with version ──────────
+  docker:
+    name: Build & Push ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    needs: ci
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (version tag + latest)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Always tag as both the specific version AND latest
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+  # ── 3. Deploy to DigitalOcean ──────────────────────────
+  deploy:
+    name: Deploy ${{ github.ref_name }} to Production
+    runs-on: ubuntu-latest
+    needs: docker
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy scripts to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          source: "scripts/rollback.sh"
+          target: "/opt/bvaishali-api/"
+          strip_components: 0
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/bvaishali-api
+            chmod +x scripts/rollback.sh
+
+            IMAGE_TAG="${{ github.ref_name }}"
+
+            # ── Record version history (keep current + previous) ──
+            VERSIONS_FILE=".versions"
+            CURRENT_TAG=$(grep "^current=" "$VERSIONS_FILE" 2>/dev/null | cut -d= -f2 || echo "")
+            echo "current=$IMAGE_TAG" > "$VERSIONS_FILE"
+            echo "previous=$CURRENT_TAG" >> "$VERSIONS_FILE"
+            echo "deployed_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$VERSIONS_FILE"
+
+            # ── Pull new image and restart API only ───────────────
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Update IMAGE_TAG in .env
+            if grep -q "^IMAGE_TAG=" .env; then
+              sed -i "s|^IMAGE_TAG=.*|IMAGE_TAG=$IMAGE_TAG|" .env
+            else
+              echo "IMAGE_TAG=$IMAGE_TAG" >> .env
+            fi
+
+            docker compose -f docker-compose.prod.yml pull api
+            docker compose -f docker-compose.prod.yml up -d --no-deps api
+
+            # ── Keep only last 2 versioned images on disk ─────────
+            REPO="ghcr.io/${{ github.repository }}"
+            docker images "$REPO" --format "{{.Tag}}\t{{.ID}}" \
+              | grep -v "latest" \
+              | sort -r \
+              | tail -n +3 \
+              | awk '{print $2}' \
+              | xargs -r docker rmi || true
+
+            echo "✅ Deployed $IMAGE_TAG"
+            cat .versions
+            docker compose -f docker-compose.prod.yml ps

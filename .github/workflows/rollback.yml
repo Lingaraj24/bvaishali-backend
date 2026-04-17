@@ -1,0 +1,26 @@
+name: Rollback
+
+# Trigger manually from GitHub UI: Actions → Rollback → Run workflow
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to roll back to (e.g. v10.0.1). Leave blank to use previous version."
+        required: false
+        default: ""
+
+jobs:
+  rollback:
+    name: Rollback to ${{ inputs.version || 'previous version' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Execute rollback via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DO_HOST }}
+          username: ${{ secrets.DO_USER }}
+          key: ${{ secrets.DO_SSH_KEY }}
+          script: |
+            set -e
+            bash /opt/bvaishali-api/scripts/rollback.sh "${{ inputs.version }}"
