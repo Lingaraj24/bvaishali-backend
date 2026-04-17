@@ -73,10 +73,19 @@ export class AuthController {
   // ─── Token endpoint (Postman / Bruno) ──────────
   // POST /api/v1/auth/token  { "email": "...", "password": "..." }
   // Returns a 1-hour access token in JSON — pass as  token: <value>  header
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  // RESTRICTED: only these two accounts may use this endpoint
+  private static readonly API_TOKEN_WHITELIST = new Set([
+    'lingarajmahanta24@gmail.com',
+    'me@bvaishali.com',
+  ]);
+
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('token')
   @HttpCode(HttpStatus.OK)
   async getApiToken(@Body() dto: LoginDto) {
+    if (!AuthController.API_TOKEN_WHITELIST.has(dto.email.toLowerCase())) {
+      throw new UnauthorizedException('This endpoint is restricted to authorised accounts only');
+    }
     const result = await this.authService.login(dto.email, dto.password);
     return {
       token: result.access_token,
