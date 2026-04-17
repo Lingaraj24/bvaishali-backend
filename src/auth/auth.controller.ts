@@ -29,6 +29,8 @@ export class AuthController {
 
   // ─── Email + Password ───────────────────────────
 
+  // 5 registrations per minute per IP — prevents account farming
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto) {

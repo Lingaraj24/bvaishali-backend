@@ -33,7 +33,7 @@ export class AuthService {
   // ─── Email + Password Registration ──────────────────
 
   async register(dto: RegisterDto) {
-    // Check if email already exists
+    // Check email uniqueness
     const existing = await this.usersService.findByEmail(dto.email);
     if (existing) {
       throw new ConflictException('An account with this email already exists');
@@ -49,6 +49,7 @@ export class AuthService {
 
     const passwordHash = await argon2.hash(dto.password);
 
+    // Use prisma directly here — we're writing the hash, not exposing it
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
@@ -78,7 +79,8 @@ export class AuthService {
   // ─── Email + Password Login ─────────────────────────
 
   async login(email: string, password: string) {
-    const user = await this.usersService.findByEmail(email);
+    // Need passwordHash for verification — use internal method
+    const user = await this.usersService.findByEmailWithSecrets(email);
     if (!user || !user.passwordHash) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -88,7 +90,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    // Update last login
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
@@ -117,23 +118,20 @@ export class AuthService {
     lastName?: string;
     avatarUrl?: string;
   }) {
-    // Try to find by googleId first
     let user = await this.prisma.user.findUnique({
       where: { googleId: profile.googleId },
     });
 
     if (!user && profile.email) {
-      // Check if email already exists (user registered via email)
-      user = await this.usersService.findByEmail(profile.email);
-      if (user) {
-        // Link Google account to existing user
+      const existing = await this.usersService.findByEmailWithSecrets(profile.email);
+      if (existing) {
         user = await this.prisma.user.update({
-          where: { id: user.id },
+          where: { id: existing.id },
           data: {
             googleId: profile.googleId,
-            avatarUrl: user.avatarUrl || profile.avatarUrl,
-            firstName: user.firstName || profile.firstName,
-            lastName: user.lastName || profile.lastName,
+            avatarUrl: existing.avatarUrl || profile.avatarUrl,
+            firstName: existing.firstName || profile.firstName,
+            lastName: existing.lastName || profile.lastName,
             isVerified: true,
           },
         });
@@ -141,7 +139,6 @@ export class AuthService {
     }
 
     if (!user) {
-      // Create new user
       user = await this.prisma.user.create({
         data: {
           googleId: profile.googleId,
@@ -155,7 +152,6 @@ export class AuthService {
       });
     }
 
-    // Update last login
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
@@ -175,7 +171,7 @@ export class AuthService {
     };
   }
 
-  // ─── Phone OTP (existing) ──────────────────────────
+  // ─── Phone OTP ─────────────────────────────────────
 
   async sendOtp(phone: string) {
     const otp = this.generateOtp();
@@ -183,26 +179,21 @@ export class AuthService {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     await this.prisma.otpSession.create({
-      data: {
-        phone,
-        otpHash,
-        expiresAt,
-        purpose: 'login',
-      },
+      data: { phone, otpHash, expiresAt, purpose: 'login' },
     });
 
-    console.log(`[DEV ONLY] OTP for ${phone}: ${otp}`);
+    // DEV ONLY: log OTP to console when no SMS provider is configured
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV] OTP for ${phone}: ${otp}`);
+    }
+    // TODO: send via WATI/MSG91 in production
 
-    return { message: 'OTP sent successfully (Check server logs in dev mode)' };
+    return { message: 'OTP sent successfully' };
   }
 
   async verifyOtp(phone: string, otp: string) {
     const session = await this.prisma.otpSession.findFirst({
-      where: {
-        phone,
-        isUsed: false,
-        expiresAt: { gt: new Date() },
-      },
+      where: { phone, isUsed: false, expiresAt: { gt: new Date() } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -229,16 +220,12 @@ export class AuthService {
       user = await this.usersService.create({ phone });
     }
 
-    // Update last login
     await this.prisma.user.update({
       where: { id: user.id },
       data: { lastLoginAt: new Date() },
     });
 
-    return {
-      access_token: this.signToken(user),
-      user,
-    };
+    return { access_token: this.signToken(user), user };
   }
 
   // ─── Forgot Password ───────────────────────────────
@@ -246,32 +233,24 @@ export class AuthService {
   async forgotPassword(email: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      // Don't reveal if email exists — return success anyway
+      // Don't reveal whether the email exists
       return { message: 'If this email exists, an OTP has been sent' };
     }
 
     const otp = this.generateOtp();
     const otpHash = await argon2.hash(otp);
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.otpSession.create({
-      data: {
-        email,
-        otpHash,
-        expiresAt,
-        purpose: 'password_reset',
-      },
+      data: { email, otpHash, expiresAt, purpose: 'password_reset' },
     });
 
-    // Send OTP via Resend; also log in dev for quick testing
+    await this.emailService.sendPasswordResetOtp(email, user.firstName ?? 'there', otp);
+
+    // DEV ONLY fallback when Resend is not configured
     if (process.env.NODE_ENV !== 'production') {
       console.log(`[DEV] Password reset OTP for ${email}: ${otp}`);
     }
-    await this.emailService.sendPasswordResetOtp(
-      email,
-      user.firstName ?? 'there',
-      otp,
-    );
 
     return { message: 'If this email exists, an OTP has been sent' };
   }
@@ -300,14 +279,13 @@ export class AuthService {
       throw new UnauthorizedException('Invalid OTP');
     }
 
-    // Mark OTP as used
     await this.prisma.otpSession.update({
       where: { id: session.id },
       data: { isUsed: true, verifiedAt: new Date() },
     });
 
-    // Update password
-    const user = await this.usersService.findByEmail(email);
+    // Need full user to update password — use internal method
+    const user = await this.usersService.findByEmailWithSecrets(email);
     if (!user) {
       throw new BadRequestException('User not found');
     }

@@ -17,12 +17,18 @@ import { EmailModule } from '../email/email.module';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET', 'super-secret-key-replace-me'),
-        signOptions: {
-          expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d') as any,
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret && process.env.NODE_ENV === 'production') {
+          throw new Error('JWT_SECRET environment variable is required in production');
+        }
+        return {
+          secret: secret ?? 'dev-only-secret-replace-in-prod',
+          signOptions: {
+            expiresIn: config.get<string>('JWT_EXPIRES_IN', '7d') as any,
+          },
+        };
+      },
     }),
   ],
   controllers: [AuthController],
