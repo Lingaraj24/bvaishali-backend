@@ -5,13 +5,10 @@ import { Prisma, User } from '@prisma/client';
 // Fields that must NEVER be sent to the client
 const SENSITIVE_FIELDS = {
   passwordHash: true,
-  otpHash: true,
-  otpAttempts: true,
-  otpExpiry: true,
 } as const;
 
 // Safe user shape returned in API responses
-export type SafeUser = Omit<User, 'passwordHash' | 'otpHash' | 'otpAttempts' | 'otpExpiry'>;
+export type SafeUser = Omit<User, 'passwordHash'>;
 
 @Injectable()
 export class UsersService {
