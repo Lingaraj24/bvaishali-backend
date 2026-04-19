@@ -14,7 +14,7 @@ import { CreateRazorpayOrderDto, VerifyPaymentDto } from './dto/payment.dto';
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name);
-  private readonly razorpay: Razorpay;
+  private readonly razorpay: Razorpay | null;
   private readonly keySecret: string;
 
   constructor(
@@ -22,11 +22,14 @@ export class PaymentsService {
     private prisma: PrismaService,
     private emailService: EmailService,
   ) {
+    const keyId = this.config.get<string>('RAZORPAY_KEY_ID', '');
     this.keySecret = this.config.get<string>('RAZORPAY_KEY_SECRET', '');
-    this.razorpay = new Razorpay({
-      key_id: this.config.get<string>('RAZORPAY_KEY_ID', ''),
-      key_secret: this.keySecret,
-    });
+    if (keyId) {
+      this.razorpay = new Razorpay({ key_id: keyId, key_secret: this.keySecret });
+    } else {
+      this.razorpay = null;
+      this.logger.warn('RAZORPAY_KEY_ID not set — payments disabled');
+    }
   }
 
   // ─────────────────────────────────────────────────────────
@@ -42,6 +45,8 @@ export class PaymentsService {
     if (order.paymentStatus === 'paid') {
       throw new BadRequestException('Order is already paid');
     }
+
+    if (!this.razorpay) throw new BadRequestException('Payments not configured on this server');
 
     const amountInPaise = Math.round(Number(order.totalAmount) * 100);
 
