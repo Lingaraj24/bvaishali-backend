@@ -404,23 +404,36 @@ async function main() {
   // ── 6. PRODUCT VARIANTS ────────────────────────────────
   console.log('  → product variants');
 
-  const sizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
-
   const allVariants: { [productId: string]: any[] } = {};
+
+  // Each product maps to a primary color (all variants of a product share one color)
+  const productColors: Record<string, string> = {
+    [pIkat.id]:     'Indigo',
+    [pKantha.id]:   'Terracotta',
+    [pLinen.id]:    'Ivory',
+    [pIndigo.id]:   'Indigo',
+    [pOchre.id]:    'Ochre',
+    [pAjrak.id]:    'Brick Red',
+    [pChanderi.id]: 'Ivory',
+    [pBandhani.id]: 'Rust',
+  };
 
   for (const product of [pIkat, pKantha, pLinen, pIndigo, pOchre, pAjrak, pChanderi, pBandhani]) {
     const productSizes = product.slug.includes('khadi') || product.slug.includes('linen')
       ? ['XS', 'S', 'M', 'L']
       : ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
+    const color = productColors[product.id] ?? null;
+
     const variants = await Promise.all(
       productSizes.map((size, i) =>
         prisma.productVariant.upsert({
           where: { sku: `${product.slug.toUpperCase().replace(/-/g, '_')}_${size}` },
-          update: {},
+          update: { color },
           create: {
             productId: product.id,
             size,
+            color,
             sku: `${product.slug.toUpperCase().replace(/-/g, '_')}_${size}`,
             stockQty: [10, 15, 20, 18, 8, 4][i] ?? 5,
             lowStockThreshold: 3,
