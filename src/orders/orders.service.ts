@@ -2,12 +2,10 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlaceOrderDto, UpdateOrderStatusDto, AddShipmentDto, AdminOrderQueryDto } from './dto/order.dto';
 import { DiscountsService } from '../discounts/discounts.service';
-import { EmailService } from '../email/email.service';
 import { Prisma } from '@prisma/client';
 
 const ORDER_INCLUDE = {
@@ -41,7 +39,6 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private discountsService: DiscountsService,
-    private emailService: EmailService,
   ) {}
 
   async getMyOrders(userId: string) {
@@ -180,24 +177,7 @@ export class OrdersService {
       return order;
     });
 
-    // Send order confirmation email — fire-and-forget; never fail the order
-    this.prisma.user
-      .findUnique({ where: { id: userId }, select: { email: true, firstName: true } })
-      .then((user) => {
-        if (user?.email) {
-          return this.emailService.sendOrderConfirmation(user.email, user.firstName ?? 'there', {
-            orderNumber: order.orderNumber,
-            totalAmount: Number(order.totalAmount),
-            items: order.items.map((i) => ({
-              snapshotName: i.snapshotName,
-              quantity: i.quantity,
-              unitPrice: Number(i.unitPrice),
-            })),
-          });
-        }
-      })
-      .catch(() => {/* logged inside emailService */});
-
+    // Email & WhatsApp are sent by PaymentsService after payment is verified
     return order;
   }
 

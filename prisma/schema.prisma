@@ -286,8 +286,10 @@ model Order {
   taxAmount      Decimal              @default(0) @map("tax_amount") @db.Decimal(10, 2)
   totalAmount    Decimal              @map("total_amount") @db.Decimal(10, 2)
   itemCount      Int                  @default(0) @map("item_count")
-  paymentStatus  PaymentStatus        @default(pending) @map("payment_status")
-  orderStatus    OrderStatus          @default(placed) @map("order_status")
+  paymentStatus      PaymentStatus        @default(pending) @map("payment_status")
+  orderStatus        OrderStatus          @default(placed) @map("order_status")
+  razorpayOrderId    String?              @unique @map("razorpay_order_id") @db.VarChar(100)
+  razorpayPaymentId  String?              @unique @map("razorpay_payment_id") @db.VarChar(100)
   notes          String?
   createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt      DateTime             @updatedAt @map("updated_at") @db.Timestamptz(6)

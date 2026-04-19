@@ -14,7 +14,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: bvaishali
-      POSTGRES_PASSWORD: bvaishali_dev
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bvaishali_dev}
       POSTGRES_DB: bvaishali
     ports:
       - "5432:5432"

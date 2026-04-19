@@ -71,6 +71,7 @@ export class EmailService {
     order: {
       orderNumber: string;
       totalAmount: number | string;
+      razorpayPaymentId?: string;
       items: Array<{ snapshotName: string; quantity: number; unitPrice: number | string }>;
     },
   ): Promise<void> {

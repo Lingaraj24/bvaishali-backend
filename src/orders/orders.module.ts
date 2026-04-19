@@ -2,11 +2,10 @@ import { Module } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { DiscountsModule } from '../discounts/discounts.module';
-import { EmailModule } from '../email/email.module';
 import { TurnstileModule } from '../turnstile/turnstile.module';
 
 @Module({
-  imports: [DiscountsModule, EmailModule, TurnstileModule],
+  imports: [DiscountsModule, TurnstileModule],
   controllers: [OrdersController],
   providers: [OrdersService],
 })

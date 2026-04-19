@@ -22,6 +22,7 @@ import { MediaController } from './admin/media/media.controller';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { EmailModule } from './email/email.module';
 import { RedisModule } from './redis/redis.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { RedisModule } from './redis/redis.module';
     WishlistModule,
     DiscountsModule,
     OrdersModule,
+    PaymentsModule,
     BannersModule,
     FlashSalesModule,
     StorageModule,
