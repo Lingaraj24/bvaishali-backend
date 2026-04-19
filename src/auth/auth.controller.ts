@@ -9,8 +9,9 @@ import {
   HttpStatus,
   UseGuards,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
-import { AuthGuard } from '@nestjs/passport';
+
 import { ConfigService } from '@nestjs/config';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -19,7 +20,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './dto/forgot-password.dto';
-import { JwtAuthGuard } from '../common/guards';
+import { JwtAuthGuard, GoogleAuthGuard } from '../common/guards';
 import { CurrentUser } from '../common/decorators';
 import type { Request, Response } from 'express';
 import type { SafeUser } from '../users/users.service';
@@ -43,6 +44,8 @@ function clearRefreshCookie(res: Response) {
 
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name);
+
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
@@ -136,22 +139,26 @@ export class AuthController {
   // ─── Google OAuth ───────────────────────────────
 
   @Get('google')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   async googleAuth() {}
 
   @Get('google/callback')
-  @UseGuards(AuthGuard('google'))
+  @UseGuards(GoogleAuthGuard)
   async googleCallback(@Req() req: any, @Res() res: Response) {
-    const result = await this.authService.validateGoogleUser(req.user);
-    const refreshToken = await this.authService.issueRefreshToken(result.user.id);
-    setRefreshCookie(res, refreshToken);
-
     const webUrl = this.configService.get<string>('WEB_URL', 'http://localhost:3000');
-    res.redirect(
-      `${webUrl}/login?token=${result.access_token}&user=${encodeURIComponent(
-        JSON.stringify(result.user),
-      )}`,
-    );
+    try {
+      const result = await this.authService.validateGoogleUser(req.user);
+      const refreshToken = await this.authService.issueRefreshToken(result.user.id);
+      setRefreshCookie(res, refreshToken);
+      res.redirect(
+        `${webUrl}/login?token=${result.access_token}&user=${encodeURIComponent(
+          JSON.stringify(result.user),
+        )}`,
+      );
+    } catch (err: any) {
+      this.logger.error('Google callback failed', err?.stack ?? err?.message ?? err);
+      res.redirect(`${webUrl}/login?error=google_failed`);
+    }
   }
 
   // ─── Phone OTP ──────────────────────────────────
