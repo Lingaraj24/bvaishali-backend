@@ -1,4 +1,4 @@
-ab/**
+/**
  * prisma/seed.ts — B Vaishali full database seed
  * Run with: npx ts-node prisma/seed.ts
  *           (or npm run seed)
@@ -31,7 +31,7 @@ async function main() {
   console.log('  → users');
 
   const adminHash = await hash('Admin@123');
-  const userHash = await hash('User@1234');
+  const userHash  = await hash('User@1234');
 
   const admin = await prisma.user.upsert({
     where: { email: 'lingarajmahanta24@gmail.com' },
@@ -408,12 +408,12 @@ async function main() {
 
   // Each product maps to a primary color (all variants of a product share one color)
   const productColors: Record<string, string> = {
-    [pIkat.id]: 'Indigo',
-    [pKantha.id]: 'Terracotta',
-    [pLinen.id]: 'Ivory',
-    [pIndigo.id]: 'Indigo',
-    [pOchre.id]: 'Ochre',
-    [pAjrak.id]: 'Brick Red',
+    [pIkat.id]:     'Indigo',
+    [pKantha.id]:   'Terracotta',
+    [pLinen.id]:    'Ivory',
+    [pIndigo.id]:   'Indigo',
+    [pOchre.id]:    'Ochre',
+    [pAjrak.id]:    'Brick Red',
     [pChanderi.id]: 'Ivory',
     [pBandhani.id]: 'Rust',
   };
@@ -448,12 +448,12 @@ async function main() {
   console.log('  → product images');
 
   const imageData = [
-    { product: pIkat, keys: ['products/ikat-maxi-1.jpg', 'products/ikat-maxi-2.jpg', 'products/ikat-maxi-fabric.jpg'] },
-    { product: pKantha, keys: ['products/kantha-dress-1.jpg', 'products/kantha-dress-2.jpg'] },
-    { product: pLinen, keys: ['products/linen-shift-1.jpg', 'products/linen-shift-fabric.jpg'] },
-    { product: pIndigo, keys: ['products/indigo-wrap-1.jpg', 'products/indigo-wrap-2.jpg', 'products/indigo-detail.jpg'] },
-    { product: pOchre, keys: ['products/ochre-midi-1.jpg', 'products/ochre-midi-2.jpg'] },
-    { product: pAjrak, keys: ['products/ajrak-kurta-1.jpg', 'products/ajrak-kurta-fabric.jpg'] },
+    { product: pIkat,     keys: ['products/ikat-maxi-1.jpg', 'products/ikat-maxi-2.jpg', 'products/ikat-maxi-fabric.jpg'] },
+    { product: pKantha,   keys: ['products/kantha-dress-1.jpg', 'products/kantha-dress-2.jpg'] },
+    { product: pLinen,    keys: ['products/linen-shift-1.jpg', 'products/linen-shift-fabric.jpg'] },
+    { product: pIndigo,   keys: ['products/indigo-wrap-1.jpg', 'products/indigo-wrap-2.jpg', 'products/indigo-detail.jpg'] },
+    { product: pOchre,    keys: ['products/ochre-midi-1.jpg', 'products/ochre-midi-2.jpg'] },
+    { product: pAjrak,    keys: ['products/ajrak-kurta-1.jpg', 'products/ajrak-kurta-fabric.jpg'] },
     { product: pChanderi, keys: ['products/chanderi-kurta-1.jpg'] },
     { product: pBandhani, keys: ['products/bandhani-coord-1.jpg', 'products/bandhani-coord-2.jpg'] },
   ];
@@ -480,12 +480,12 @@ async function main() {
   console.log('  → product tags');
 
   const productTagData = [
-    { product: pIkat, tags: [tagIkat, tagHandwoven, tagNew, tagFestive] },
-    { product: pKantha, tags: [tagKantha, tagBest, tagFestive] },
-    { product: pLinen, tags: [tagNatDye, tagEveryday] },
-    { product: pIndigo, tags: [tagBlock, tagNatDye, tagLimited] },
-    { product: pOchre, tags: [tagIkat, tagHandwoven, tagNew, tagFestive] },
-    { product: pAjrak, tags: [tagBlock, tagEveryday] },
+    { product: pIkat,     tags: [tagIkat, tagHandwoven, tagNew, tagFestive] },
+    { product: pKantha,   tags: [tagKantha, tagBest, tagFestive] },
+    { product: pLinen,    tags: [tagNatDye, tagEveryday] },
+    { product: pIndigo,   tags: [tagBlock, tagNatDye, tagLimited] },
+    { product: pOchre,    tags: [tagIkat, tagHandwoven, tagNew, tagFestive] },
+    { product: pAjrak,    tags: [tagBlock, tagEveryday] },
     { product: pChanderi, tags: [tagFestive, tagLimited] },
     { product: pBandhani, tags: [tagEveryday] },
   ];
@@ -599,21 +599,21 @@ async function main() {
   console.log('  → orders');
 
   const orderStatusSets: Array<{ status: OrderStatus; payment: PaymentStatus }> = [
-    { status: OrderStatus.delivered, payment: PaymentStatus.paid },
-    { status: OrderStatus.shipped, payment: PaymentStatus.paid },
+    { status: OrderStatus.delivered,  payment: PaymentStatus.paid },
+    { status: OrderStatus.shipped,    payment: PaymentStatus.paid },
     { status: OrderStatus.processing, payment: PaymentStatus.paid },
-    { status: OrderStatus.placed, payment: PaymentStatus.pending },
-    { status: OrderStatus.cancelled, payment: PaymentStatus.refunded },
+    { status: OrderStatus.placed,     payment: PaymentStatus.pending },
+    { status: OrderStatus.cancelled,  payment: PaymentStatus.refunded },
   ];
 
   const orderDefs = [
-    { customer: customers[0], address: addresses[0], product: pIkat, variant: allVariants[pIkat.id]?.[2], price: 8500, statusIdx: 0, daysBack: 30, coupon: null },
-    { customer: customers[1], address: addresses[1], product: pKantha, variant: allVariants[pKantha.id]?.[1], price: 6200, statusIdx: 1, daysBack: 10, coupon: discounts[0] },
-    { customer: customers[2], address: addresses[2], product: pIndigo, variant: allVariants[pIndigo.id]?.[3], price: 7100, statusIdx: 2, daysBack: 5, coupon: null },
-    { customer: customers[3], address: addresses[3], product: pOchre, variant: allVariants[pOchre.id]?.[2], price: 9200, statusIdx: 3, daysBack: 1, coupon: discounts[1] },
-    { customer: customers[4], address: addresses[4], product: pLinen, variant: allVariants[pLinen.id]?.[0], price: 4800, statusIdx: 4, daysBack: 20, coupon: null },
-    { customer: customers[0], address: addresses[0], product: pAjrak, variant: allVariants[pAjrak.id]?.[1], price: 3400, statusIdx: 0, daysBack: 60, coupon: null },
-    { customer: customers[1], address: addresses[1], product: pChanderi, variant: allVariants[pChanderi.id]?.[2], price: 5600, statusIdx: 1, daysBack: 15, coupon: discounts[2] },
+    { customer: customers[0], address: addresses[0], product: pIkat,     variant: allVariants[pIkat.id]?.[2],     price: 8500,  statusIdx: 0, daysBack: 30, coupon: null },
+    { customer: customers[1], address: addresses[1], product: pKantha,   variant: allVariants[pKantha.id]?.[1],   price: 6200,  statusIdx: 1, daysBack: 10, coupon: discounts[0] },
+    { customer: customers[2], address: addresses[2], product: pIndigo,   variant: allVariants[pIndigo.id]?.[3],   price: 7100,  statusIdx: 2, daysBack: 5,  coupon: null },
+    { customer: customers[3], address: addresses[3], product: pOchre,    variant: allVariants[pOchre.id]?.[2],    price: 9200,  statusIdx: 3, daysBack: 1,  coupon: discounts[1] },
+    { customer: customers[4], address: addresses[4], product: pLinen,    variant: allVariants[pLinen.id]?.[0],    price: 4800,  statusIdx: 4, daysBack: 20, coupon: null },
+    { customer: customers[0], address: addresses[0], product: pAjrak,    variant: allVariants[pAjrak.id]?.[1],    price: 3400,  statusIdx: 0, daysBack: 60, coupon: null },
+    { customer: customers[1], address: addresses[1], product: pChanderi, variant: allVariants[pChanderi.id]?.[2], price: 5600,  statusIdx: 1, daysBack: 15, coupon: discounts[2] },
   ];
 
   const createdOrders = [];
@@ -760,9 +760,9 @@ async function main() {
   console.log('  → flash sales');
 
   const flashSaleData = [
-    { product: pKantha, variant: allVariants[pKantha.id]?.[2], sale: 4960, orig: 6200, pct: 20, start: daysAgo(0), end: daysFromNow(2) },
-    { product: pLinen, variant: allVariants[pLinen.id]?.[1], sale: 3840, orig: 4800, pct: 20, start: daysAgo(1), end: daysFromNow(1) },
-    { product: pAjrak, variant: null, sale: 2720, orig: 3400, pct: 20, start: daysFromNow(1), end: daysFromNow(3) },
+    { product: pKantha, variant: allVariants[pKantha.id]?.[2], sale: 4960,  orig: 6200,  pct: 20, start: daysAgo(0),  end: daysFromNow(2) },
+    { product: pLinen,  variant: allVariants[pLinen.id]?.[1],  sale: 3840,  orig: 4800,  pct: 20, start: daysAgo(1),  end: daysFromNow(1) },
+    { product: pAjrak,  variant: null,                          sale: 2720,  orig: 3400,  pct: 20, start: daysFromNow(1), end: daysFromNow(3) },
   ];
 
   for (const fs of flashSaleData) {
@@ -789,9 +789,9 @@ async function main() {
 
   const bannerData = [
     { title: "SS '26 Cinnamon Edit", headline: 'New Season, New Craft', ctaText: 'Shop Now', ctaUrl: '/designs?campaign=ss26-cinnamon-edit', r2Key: 'banners/ss26-hero.jpg', position: BannerPosition.hero, sort: 1 },
-    { title: 'Festive 2025 Edit', headline: 'Celebrate in Craft', ctaText: 'Explore', ctaUrl: '/designs?campaign=festive-2025', r2Key: 'banners/festive-hero.jpg', position: BannerPosition.hero, sort: 2 },
+    { title: 'Festive 2025 Edit',    headline: 'Celebrate in Craft',   ctaText: 'Explore',  ctaUrl: '/designs?campaign=festive-2025',         r2Key: 'banners/festive-hero.jpg', position: BannerPosition.hero, sort: 2 },
     { title: 'Free Shipping Banner', headline: 'Free shipping over ₹2,500', ctaText: null, ctaUrl: null, r2Key: 'banners/shipping-bar.jpg', position: BannerPosition.announcement_bar, sort: 1 },
-    { title: 'Earth Edit Mid-Page', headline: 'Naturally Dyed. Naturally Beautiful.', ctaText: 'Discover', ctaUrl: '/designs?campaign=the-earth-edit', r2Key: 'banners/earth-edit-mid.jpg', position: BannerPosition.mid_page, sort: 1 },
+    { title: 'Earth Edit Mid-Page',  headline: 'Naturally Dyed. Naturally Beautiful.', ctaText: 'Discover', ctaUrl: '/designs?campaign=the-earth-edit', r2Key: 'banners/earth-edit-mid.jpg', position: BannerPosition.mid_page, sort: 1 },
   ];
 
   for (const b of bannerData) {
@@ -819,9 +819,9 @@ async function main() {
 
   const broadcastData = [
     { title: "SS '26 Launch Announcement", channel: BroadcastChannel.both, template: 'ss26_launch', segment: TargetSegment.all_customers, status: BroadcastStatus.sent, sentAt: daysAgo(10), recipients: 1240, opens: 310 },
-    { title: 'Festive Sale — 20% Off', channel: BroadcastChannel.whatsapp, template: 'festive_sale_20', segment: TargetSegment.wishlist_holders, status: BroadcastStatus.sent, sentAt: daysAgo(5), recipients: 420, opens: 180 },
-    { title: 'Re-engage Inactive Buyers', channel: BroadcastChannel.email, template: null, segment: TargetSegment.inactive_30d, status: BroadcastStatus.scheduled, sentAt: null, recipients: null, opens: 0 },
-    { title: 'Thank You — Recent Buyers', channel: BroadcastChannel.whatsapp, template: 'post_purchase_thankyou', segment: TargetSegment.recent_buyers, status: BroadcastStatus.sent, sentAt: daysAgo(2), recipients: 87, opens: 62 },
+    { title: 'Festive Sale — 20% Off',     channel: BroadcastChannel.whatsapp, template: 'festive_sale_20', segment: TargetSegment.wishlist_holders, status: BroadcastStatus.sent, sentAt: daysAgo(5), recipients: 420, opens: 180 },
+    { title: 'Re-engage Inactive Buyers',  channel: BroadcastChannel.email, template: null, segment: TargetSegment.inactive_30d, status: BroadcastStatus.scheduled, sentAt: null, recipients: null, opens: 0 },
+    { title: 'Thank You — Recent Buyers',  channel: BroadcastChannel.whatsapp, template: 'post_purchase_thankyou', segment: TargetSegment.recent_buyers, status: BroadcastStatus.sent, sentAt: daysAgo(2), recipients: 87, opens: 62 },
   ];
 
   for (const bc of broadcastData) {
