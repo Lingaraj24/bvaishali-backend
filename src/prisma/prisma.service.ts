@@ -12,9 +12,13 @@ export class PrismaService
   constructor() {
     dotenv.config();
     
-    const connectionString = process.env.DATABASE_URL;
+    // Strip sslmode from the URL — pg parses it from the connection string
+    // and it overrides the ssl object below, causing cert verification to fail.
+    const rawUrl = new URL(process.env.DATABASE_URL!);
+    rawUrl.searchParams.delete('sslmode');
+
     const pool = new Pool({
-      connectionString,
+      connectionString: rawUrl.toString(),
       ssl: { rejectUnauthorized: false },
     });
     const adapter = new PrismaPg(pool);
