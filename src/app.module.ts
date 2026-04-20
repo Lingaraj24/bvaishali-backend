@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
@@ -23,6 +24,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { EmailModule } from './email/email.module';
 import { RedisModule } from './redis/redis.module';
 import { PaymentsModule } from './payments/payments.module';
+import { SchedulerModule } from './scheduler/scheduler.module';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { PaymentsModule } from './payments/payments.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     // Global rate limit: 100 requests per minute per IP
     // Auth endpoints override this with stricter limits via @Throttle()
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
@@ -51,6 +54,7 @@ import { PaymentsModule } from './payments/payments.module';
     FlashSalesModule,
     StorageModule,
     AnalyticsModule,
+    SchedulerModule,
   ],
   controllers: [AppController, MediaController],
   providers: [

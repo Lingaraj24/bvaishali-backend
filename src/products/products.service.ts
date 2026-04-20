@@ -12,7 +12,7 @@ import {
   UpdateVariantDto,
   ProductQueryDto,
 } from './dto/product.dto';
-import { Prisma } from '@prisma/client';
+import { Prisma, VideoType, ImageType } from '@prisma/client';
 
 const PRODUCT_DETAIL_INCLUDE = {
   category: { select: { id: true, name: true, slug: true } },
@@ -127,12 +127,14 @@ export class ProductsService {
     const existing = await this.prisma.product.findUnique({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException(`Slug '${dto.slug}' already exists`);
 
-    const { tagIds, variants, ...productData } = dto;
+    const { tagIds, variants, images, video, categoryId, campaignId, ...productData } = dto;
 
     return this.prisma.product.create({
       data: {
         ...productData,
         priceInr: productData.priceInr as any,
+        ...(categoryId && { category: { connect: { id: categoryId } } }),
+        ...(campaignId && { campaign: { connect: { id: campaignId } } }),
         ...(tagIds?.length && {
           tags: {
             create: tagIds.map((tagId) => ({ tag: { connect: { id: tagId } } })),
@@ -140,6 +142,28 @@ export class ProductsService {
         }),
         ...(variants?.length && {
           variants: { create: variants },
+        }),
+        ...(images?.length && {
+          images: {
+            create: images.map((img, idx) => ({
+              r2ObjectKey: img.r2ObjectKey,
+              altText: img.altText ?? '',
+              isPrimary: img.isPrimary ?? idx === 0,
+              sortOrder: img.sortOrder ?? idx,
+              imageType: ImageType.gallery,
+            })),
+          },
+        }),
+        ...(video && {
+          videos: {
+            create: [{
+              r2ObjectKey: video.r2ObjectKey,
+              videoType: VideoType.fabric_drape,
+              thumbnailR2Key: video.thumbnailR2Key,
+              durationSecs: video.durationSecs,
+              sortOrder: 0,
+            }],
+          },
         }),
       },
       include: PRODUCT_DETAIL_INCLUDE,

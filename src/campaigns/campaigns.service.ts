@@ -14,6 +14,13 @@ export class CampaignsService {
     });
   }
 
+  async findAllAdmin() {
+    return this.prisma.campaign.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { products: true } } },
+    });
+  }
+
   async findBySlug(slug: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { slug },
@@ -38,10 +45,15 @@ export class CampaignsService {
       data: {
         title: dto.title,
         slug: dto.slug,
+        tagline: dto.tagline,
+        heading: dto.heading,
+        subHeading: dto.subHeading,
         description: dto.description,
         heroR2Key: dto.bannerR2Key,
+        subImage1R2Key: dto.subImage1R2Key,
+        subImage2R2Key: dto.subImage2R2Key,
         isActive: dto.isActive ?? true,
-        publishedAt: dto.isActive ? new Date() : undefined,
+        publishedAt: dto.isActive !== false ? new Date() : undefined,
       },
     });
   }
@@ -51,10 +63,15 @@ export class CampaignsService {
     return this.prisma.campaign.update({
       where: { id },
       data: {
-        title: dto.title,
-        description: dto.description,
-        heroR2Key: dto.bannerR2Key,
-        isActive: dto.isActive,
+        ...(dto.title !== undefined && { title: dto.title }),
+        ...(dto.tagline !== undefined && { tagline: dto.tagline }),
+        ...(dto.heading !== undefined && { heading: dto.heading }),
+        ...(dto.subHeading !== undefined && { subHeading: dto.subHeading }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.bannerR2Key !== undefined && { heroR2Key: dto.bannerR2Key }),
+        ...(dto.subImage1R2Key !== undefined && { subImage1R2Key: dto.subImage1R2Key }),
+        ...(dto.subImage2R2Key !== undefined && { subImage2R2Key: dto.subImage2R2Key }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
     });
   }

@@ -31,7 +31,7 @@ export class BannersService {
         headline: dto.title,
         ctaText: dto.ctaText,
         ctaUrl: dto.ctaUrl,
-        imageR2Key: dto.imageR2Key,
+        imageR2Key: dto.imageR2Key ?? '',
         position: dto.position,
         sortOrder: dto.sortOrder ?? 0,
         validFrom: dto.startsAt ? new Date(dto.startsAt) : undefined,
@@ -45,13 +45,19 @@ export class BannersService {
     return this.prisma.promotionalBanner.update({
       where: { id },
       data: {
-        isActive: dto.isActive,
-        headline: dto.title,
-        ctaText: dto.ctaText,
-        ctaUrl: dto.ctaUrl,
-        sortOrder: dto.sortOrder,
-        validFrom: dto.startsAt ? new Date(dto.startsAt) : undefined,
-        validUntil: dto.endsAt ? new Date(dto.endsAt) : undefined,
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        // headline field: explicit `headline` beats legacy `title` mapping
+        ...(dto.headline !== undefined && { headline: dto.headline }),
+        ...(dto.title !== undefined && { title: dto.title, headline: dto.title }),
+        // For hero slides: eyebrow stored in ctaText, subText stored in ctaUrl
+        ...(dto.eyebrow !== undefined && { ctaText: dto.eyebrow }),
+        ...(dto.subText !== undefined && { ctaUrl: dto.subText }),
+        ...(dto.ctaText !== undefined && { ctaText: dto.ctaText }),
+        ...(dto.ctaUrl !== undefined && { ctaUrl: dto.ctaUrl }),
+        ...(dto.imageR2Key !== undefined && { imageR2Key: dto.imageR2Key }),
+        ...(dto.sortOrder !== undefined && { sortOrder: dto.sortOrder }),
+        ...(dto.startsAt && { validFrom: new Date(dto.startsAt) }),
+        ...(dto.endsAt && { validUntil: new Date(dto.endsAt) }),
       },
     });
   }

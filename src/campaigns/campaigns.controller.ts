@@ -15,6 +15,13 @@ export class CampaignsController {
     return this.campaignsService.findAll();
   }
 
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.admin, UserRole.manager)
+  findAllAdmin() {
+    return this.campaignsService.findAllAdmin();
+  }
+
   @Get(':slug')
   findBySlug(@Param('slug') slug: string) {
     return this.campaignsService.findBySlug(slug);

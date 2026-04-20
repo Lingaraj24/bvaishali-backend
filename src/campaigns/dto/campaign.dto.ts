@@ -13,7 +13,18 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(255)
   tagline?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  heading?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  subHeading?: string;
 
   @IsString()
   @IsOptional()
@@ -25,7 +36,11 @@ export class CreateCampaignDto {
 
   @IsString()
   @IsOptional()
-  videoR2Key?: string;
+  subImage1R2Key?: string;
+
+  @IsString()
+  @IsOptional()
+  subImage2R2Key?: string;
 
   @IsDateString()
   @IsOptional()
@@ -47,7 +62,18 @@ export class UpdateCampaignDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(255)
   tagline?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  heading?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  subHeading?: string;
 
   @IsString()
   @IsOptional()
@@ -59,7 +85,11 @@ export class UpdateCampaignDto {
 
   @IsString()
   @IsOptional()
-  videoR2Key?: string;
+  subImage1R2Key?: string;
+
+  @IsString()
+  @IsOptional()
+  subImage2R2Key?: string;
 
   @IsDateString()
   @IsOptional()

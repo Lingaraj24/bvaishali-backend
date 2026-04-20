@@ -16,7 +16,13 @@ model User {
   authProvider       String               @default("phone") @map("auth_provider") @db.VarChar(20)
   firstName          String?              @map("first_name") @db.VarChar(50)
   lastName           String?              @map("last_name") @db.VarChar(50)
+  salutation         String?              @db.VarChar(10)
   avatarUrl          String?              @map("avatar_url")
+  avatarR2Key        String?              @map("avatar_r2_key") @db.VarChar(500)
+  dateOfBirth        DateTime?            @map("date_of_birth") @db.Date
+  anniversaryDate    DateTime?            @map("anniversary_date") @db.Date
+  alternatePhone     String?              @map("alternate_phone") @db.VarChar(20)
+  alternateEmail     String?              @map("alternate_email") @db.VarChar(255)
   role               UserRole             @default(customer)
   preferredCurrency  String               @default("INR") @map("preferred_currency") @db.VarChar(3)
   isVerified         Boolean              @default(false) @map("is_verified")
@@ -247,15 +253,20 @@ model ProductTag {
 }
 
 model Campaign {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title       String    @db.VarChar(255)
-  slug        String    @unique @db.VarChar(255)
-  description String?
-  heroR2Key   String?   @map("hero_r2_key")
-  isActive    Boolean   @default(true) @map("is_active")
-  publishedAt DateTime? @map("published_at") @db.Timestamptz(6)
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-  products    Product[]
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title          String    @db.VarChar(255)
+  slug           String    @unique @db.VarChar(255)
+  tagline        String?   @db.VarChar(255)
+  heading        String?   @db.VarChar(500)
+  subHeading     String?   @map("sub_heading") @db.VarChar(500)
+  description    String?
+  heroR2Key      String?   @map("hero_r2_key")
+  subImage1R2Key String?   @map("sub_image1_r2_key")
+  subImage2R2Key String?   @map("sub_image2_r2_key")
+  isActive       Boolean   @default(true) @map("is_active")
+  publishedAt    DateTime? @map("published_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  products       Product[]
 
   @@map("campaigns")
 }

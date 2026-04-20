@@ -2,7 +2,6 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -15,8 +14,8 @@ export class CreateBannerDto {
   position: BannerPosition;
 
   @IsString()
-  @IsNotEmpty()
-  imageR2Key: string;
+  @IsOptional()
+  imageR2Key?: string;
 
   @IsString()
   @IsOptional()
@@ -63,6 +62,18 @@ export class UpdateBannerDto {
 
   @IsString()
   @IsOptional()
+  headline?: string;
+
+  @IsString()
+  @IsOptional()
+  eyebrow?: string;
+
+  @IsString()
+  @IsOptional()
+  subText?: string;
+
+  @IsString()
+  @IsOptional()
   subtitle?: string;
 
   @IsString()
@@ -72,6 +83,10 @@ export class UpdateBannerDto {
   @IsString()
   @IsOptional()
   ctaUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  imageR2Key?: string;
 
   @IsNumber()
   @IsOptional()

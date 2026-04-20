@@ -12,6 +12,38 @@ import {
 import { Type } from 'class-transformer';
 import { ProductStatus } from '@prisma/client';
 
+export class CreateProductImageDto {
+  @IsString()
+  @IsNotEmpty()
+  r2ObjectKey: string;
+
+  @IsString()
+  @IsOptional()
+  altText?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isPrimary?: boolean;
+
+  @IsNumber()
+  @IsOptional()
+  sortOrder?: number;
+}
+
+export class CreateProductVideoDto {
+  @IsString()
+  @IsNotEmpty()
+  r2ObjectKey: string;
+
+  @IsString()
+  @IsOptional()
+  thumbnailR2Key?: string;
+
+  @IsNumber()
+  @IsOptional()
+  durationSecs?: number;
+}
+
 export class CreateVariantDto {
   @IsString()
   @IsNotEmpty()
@@ -137,6 +169,15 @@ export class CreateProductDto {
   @IsOptional()
   @Type(() => CreateVariantDto)
   variants?: CreateVariantDto[];
+
+  @IsArray()
+  @IsOptional()
+  @Type(() => CreateProductImageDto)
+  images?: CreateProductImageDto[];
+
+  @IsOptional()
+  @Type(() => CreateProductVideoDto)
+  video?: CreateProductVideoDto;
 }
 
 export class UpdateProductDto {

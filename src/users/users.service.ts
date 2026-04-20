@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, User } from '@prisma/client';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 // Fields that must NEVER be sent to the client
 const SENSITIVE_FIELDS = {
@@ -64,5 +65,58 @@ export class UsersService {
       data,
       omit: SENSITIVE_FIELDS,
     });
+  }
+
+  /**
+   * Update editable profile fields (never touches phone/email).
+   * Converts dateOfBirth / anniversaryDate strings to Date objects.
+   */
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<SafeUser> {
+    const data: Prisma.UserUpdateInput = {};
+
+    if (dto.salutation !== undefined)      data.salutation      = dto.salutation;
+    if (dto.firstName  !== undefined)      data.firstName       = dto.firstName;
+    if (dto.lastName   !== undefined)      data.lastName        = dto.lastName;
+    if (dto.alternatePhone !== undefined)  data.alternatePhone  = dto.alternatePhone;
+    if (dto.alternateEmail !== undefined)  data.alternateEmail  = dto.alternateEmail;
+    if (dto.avatarR2Key !== undefined) {
+      data.avatarR2Key = dto.avatarR2Key;
+      // Derive public URL from key so existing consumers of avatarUrl still work
+      const r2Public = process.env.R2_PUBLIC_URL || 'https://media.bvaishali.com';
+      data.avatarUrl  = `${r2Public}/${dto.avatarR2Key}`;
+    }
+    if (dto.dateOfBirth !== undefined) {
+      data.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
+    }
+    if (dto.anniversaryDate !== undefined) {
+      data.anniversaryDate = dto.anniversaryDate ? new Date(dto.anniversaryDate) : null;
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+      omit: SENSITIVE_FIELDS,
+    });
+  }
+
+  /** Used by the scheduler to find users with upcoming birthdays/anniversaries */
+  async findUsersWithUpcomingDate(field: 'dateOfBirth' | 'anniversaryDate', daysAhead: number) {
+    // Match users whose month+day falls exactly `daysAhead` from today (any year)
+    const target = new Date();
+    target.setDate(target.getDate() + daysAhead);
+    const month = target.getMonth() + 1; // 1-12
+    const day   = target.getDate();
+
+    return this.prisma.$queryRaw<Array<{
+      id: string; email: string | null; phone: string | null;
+      first_name: string | null; alternate_phone: string | null;
+    }>>`
+      SELECT id, email, phone, first_name, alternate_phone
+      FROM users
+      WHERE EXTRACT(MONTH FROM ${field === 'dateOfBirth' ? Prisma.sql`date_of_birth` : Prisma.sql`anniversary_date`}) = ${month}
+        AND EXTRACT(DAY   FROM ${field === 'dateOfBirth' ? Prisma.sql`date_of_birth` : Prisma.sql`anniversary_date`}) = ${day}
+        AND role != 'admin'
+        AND deleted_at IS NULL
+    `;
   }
 }

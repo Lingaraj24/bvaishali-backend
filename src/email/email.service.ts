@@ -65,6 +65,69 @@ export class EmailService {
     }
   }
 
+  async sendCelebrationCoupon(
+    email: string,
+    firstName: string,
+    occasion: 'birthday' | 'anniversary',
+    daysAhead: number,
+    couponCode: string,
+  ): Promise<void> {
+    if (!this.isConfigured) return;
+    const occasionLabel = occasion === 'birthday' ? 'Birthday' : 'Anniversary';
+    const greeting =
+      occasion === 'birthday'
+        ? `Wishing you a wonderful birthday ahead!`
+        : `Wishing you a joyous anniversary celebration!`;
+    const timing = daysAhead === 15 ? 'two weeks away' : 'just a week away';
+
+    try {
+      await this.resend!.emails.send({
+        from: this.from,
+        to: [email],
+        subject: `Your ${occasionLabel} gift from B Vaishali — ₹250 off`,
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <body style="font-family: Georgia, serif; background: #faf9f7; margin: 0; padding: 40px 0;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; margin: 0 auto; background: #fff; border: 1px solid #e8e0d5; border-radius: 4px;">
+                <tr>
+                  <td style="padding: 40px 48px 32px;">
+                    <p style="font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: #9b8e7e; margin: 0 0 24px;">B Vaishali</p>
+                    <h1 style="font-size: 22px; font-weight: 400; color: #1a1816; margin: 0 0 8px;">
+                      A little gift for your ${occasionLabel} 🎁
+                    </h1>
+                    <p style="color: #5a5248; font-size: 15px; line-height: 1.6; margin: 0 0 24px;">
+                      Dear ${firstName},<br><br>
+                      Your ${occasionLabel.toLowerCase()} is ${timing}. ${greeting}<br><br>
+                      To make your special day even more memorable, here is a <strong>₹250 off</strong> coupon — our treat for you.
+                    </p>
+                    <div style="background: #f5f1ec; border: 2px dashed #c8a882; border-radius: 4px; padding: 24px; text-align: center; margin-bottom: 32px;">
+                      <p style="color: #9b8e7e; font-size: 11px; letter-spacing: 3px; text-transform: uppercase; margin: 0 0 8px;">Your coupon code</p>
+                      <span style="font-family: monospace; font-size: 28px; letter-spacing: 6px; color: #B2351F; font-weight: 600;">${couponCode}</span>
+                      <p style="color: #9b8e7e; font-size: 12px; margin: 12px 0 0;">₹250 off on your next order · Valid for 30 days</p>
+                    </div>
+                    <p style="color: #5a5248; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">
+                      Shop our latest collections and apply your code at checkout. Treat yourself — you deserve it!
+                    </p>
+                    <a href="https://bvaishali.com/designs" style="display: inline-block; background: #1a1816; color: #fff; text-decoration: none; padding: 14px 32px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; border-radius: 2px;">Shop Now</a>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 24px 48px; border-top: 1px solid #e8e0d5;">
+                    <p style="color: #9b8e7e; font-size: 12px; margin: 0 0 4px;">Minimum order value: ₹999. One use per customer.</p>
+                    <p style="color: #bdb5ab; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} B Vaishali. All rights reserved.</p>
+                  </td>
+                </tr>
+              </table>
+            </body>
+          </html>
+        `,
+      });
+    } catch (err) {
+      this.logger.error(`Failed to send celebration email to ${email}`, err);
+    }
+  }
+
   async sendOrderConfirmation(
     email: string,
     firstName: string,
