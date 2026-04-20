@@ -81,7 +81,7 @@ export class StorageService {
     return {
       signedUrl,
       key,
-      publicUrl: `${this.configService.get('R2_PUBLIC_URL')}/${key}`,
+      publicUrl: `${this.configService.get('R2_PUBLIC_URL') || 'https://media.bvaishali.com'}/${key}`,
     };
   }
 }

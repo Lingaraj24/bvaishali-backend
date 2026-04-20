@@ -68,6 +68,10 @@ export class CreateBannerDto {
 }
 
 export class UpdateBannerDto {
+  @IsEnum(BannerPosition)
+  @IsOptional()
+  position?: BannerPosition;
+
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
