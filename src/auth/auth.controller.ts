@@ -32,7 +32,7 @@ function setRefreshCookie(res: Response, token: string) {
   res.cookie('bv_refresh', token, {
     httpOnly: true,                    // JS cannot read this
     secure: IS_PROD,                   // HTTPS only in production
-    sameSite: IS_PROD ? 'strict' : 'lax',
+    sameSite: IS_PROD ? 'none' : 'lax',
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     path: '/api/v1/auth',              // only sent to auth endpoints
   });
