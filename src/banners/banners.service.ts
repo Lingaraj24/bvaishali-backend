@@ -28,11 +28,12 @@ export class BannersService {
     return this.prisma.promotionalBanner.create({
       data: {
         title: dto.title ?? '',
-        headline: dto.title,
-        ctaText: dto.ctaText,
-        ctaUrl: dto.ctaUrl,
+        headline: dto.headline ?? dto.title,
+        ctaText: dto.eyebrow ?? dto.ctaText,
+        ctaUrl: dto.subText ?? dto.ctaUrl,
         imageR2Key: dto.imageR2Key ?? '',
         position: dto.position,
+        isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
         validFrom: dto.startsAt ? new Date(dto.startsAt) : undefined,
         validUntil: dto.endsAt ? new Date(dto.endsAt) : undefined,

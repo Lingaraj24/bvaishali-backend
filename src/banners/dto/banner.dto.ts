@@ -27,6 +27,18 @@ export class CreateBannerDto {
 
   @IsString()
   @IsOptional()
+  headline?: string;
+
+  @IsString()
+  @IsOptional()
+  eyebrow?: string;
+
+  @IsString()
+  @IsOptional()
+  subText?: string;
+
+  @IsString()
+  @IsOptional()
   subtitle?: string;
 
   @IsString()
@@ -36,6 +48,10 @@ export class CreateBannerDto {
   @IsString()
   @IsOptional()
   ctaUrl?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 
   @IsNumber()
   @Min(0)
